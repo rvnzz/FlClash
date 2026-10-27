@@ -170,6 +170,21 @@ class App {
       return null;
     }
   }
+
+  /// Settings.Secure.ANDROID_ID: stable per app signing key, user and device.
+  Future<String?> getAndroidId() async {
+    try {
+      return await methodChannel
+          .invokeMethod<String>('getAndroidId')
+          .timeout(_platformProbeTimeout);
+    } catch (error) {
+      commonPrint.log(
+        'Failed to read ANDROID_ID: ${compactError(error)}',
+        logLevel: LogLevel.warning,
+      );
+      return null;
+    }
+  }
 }
 
 final app = system.isAndroid ? App() : null;

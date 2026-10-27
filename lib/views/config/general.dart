@@ -1,14 +1,18 @@
+import 'dart:async';
+
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/features/form/form.dart';
 import 'package:fl_clash/l10n/l10n.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/providers/providers.dart';
+import 'package:fl_clash/ui/icons/icons.dart';
 import 'package:fl_clash/views/config/on_demand.dart';
 import 'package:fl_clash/views/config/override.dart';
 import 'package:fl_clash/views/config/user_agents.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 part 'general/overrides.dart';
@@ -44,6 +48,83 @@ class UaItem extends ConsumerWidget {
       title: Text(appLocalizations.userAgent),
       subtitle: Text(globalUa ?? appLocalizations.defaultText),
       widget: const UserAgentsView(),
+    );
+  }
+}
+
+bool _isRu(BuildContext context) =>
+    Localizations.localeOf(context).languageCode == 'ru';
+
+class HwidToggleItem extends StatefulWidget {
+  const HwidToggleItem({super.key});
+
+  @override
+  State<HwidToggleItem> createState() => _HwidToggleItemState();
+}
+
+class _HwidToggleItemState extends State<HwidToggleItem> {
+  bool _enabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadEnabled());
+  }
+
+  Future<void> _loadEnabled() async {
+    final value = await hwid.enabled;
+    if (mounted) {
+      setState(() => _enabled = value);
+    }
+  }
+
+  Future<void> _handleChanged(bool value) async {
+    setState(() => _enabled = value);
+    await hwid.setEnabled(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isRu = _isRu(context);
+    return ListItem.toggle(
+      title: Text(isRu ? 'Отправлять HWID' : 'Send HWID'),
+      subtitle: Text(
+        isRu
+            ? 'x-hwid при обновлении подписки (Remnawave)'
+            : 'x-hwid on subscription update (Remnawave)',
+      ),
+      value: _enabled,
+      onChanged: _handleChanged,
+    );
+  }
+}
+
+class HwidValueItem extends StatelessWidget {
+  const HwidValueItem({super.key});
+
+  Future<void> _handleCopy(BuildContext context, String value) async {
+    await Clipboard.setData(ClipboardData(text: value));
+    if (context.mounted) {
+      context.showNotifier(
+        context.appLocalizations.copySuccess,
+        level: MessageLevel.success,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String>(
+      future: hwid.id,
+      builder: (context, snapshot) {
+        final value = snapshot.data;
+        return ListItem(
+          title: const Text('HWID'),
+          subtitle: Text(value ?? '…'),
+          trailing: const GlyphIcon(AppGlyphs.copy),
+          onTap: value == null ? null : () => _handleCopy(context, value),
+        );
+      },
     );
   }
 }
@@ -342,6 +423,8 @@ class GeneralView extends ConsumerWidget {
   List<Widget> _requestItems() {
     return [
       const UaItem(),
+      const HwidToggleItem(),
+      const HwidValueItem(),
       _appSettingToggle(
         title: (l) => l.checkCertificate,
         select: (state) => state.checkCertificate,

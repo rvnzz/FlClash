@@ -40,13 +40,20 @@ class Request {
     );
   }
 
-  Future<Response<T>> _download<T>(String url, ResponseType responseType) {
+  Future<Response<T>> _download<T>(
+    String url,
+    ResponseType responseType, {
+    Map<String, Object> extraHeaders = const {},
+  }) {
     final target = downloadTarget(url);
     final cancelToken = CancelToken();
     return _clashDio
         .getUri<T>(
           target.uri,
-          options: Options(responseType: responseType, headers: target.headers),
+          options: Options(
+            responseType: responseType,
+            headers: {...extraHeaders, ...target.headers},
+          ),
           cancelToken: cancelToken,
         )
         .timeout(
@@ -67,6 +74,23 @@ class Request {
     } catch (e) {
       commonPrint.log(
         'getFileResponseForUrl error ${compactError(e)}',
+        logLevel: LogLevel.warning,
+      );
+      rethrow;
+    }
+  }
+
+  /// Subscription download that also identifies the device (Remnawave HWID).
+  Future<Response<Uint8List>> getSubscriptionResponseForUrl(String url) async {
+    try {
+      return await _download<Uint8List>(
+        url,
+        ResponseType.bytes,
+        extraHeaders: await hwid.headers,
+      );
+    } catch (e) {
+      commonPrint.log(
+        'getSubscriptionResponseForUrl error ${compactError(e)}',
         logLevel: LogLevel.warning,
       );
       rethrow;

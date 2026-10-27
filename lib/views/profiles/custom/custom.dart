@@ -149,7 +149,7 @@ class _CustomProfileViewState extends ConsumerState<CustomProfileView> {
       return;
     }
     await _import(() async {
-      final response = await request.getFileResponseForUrl(url);
+      final response = await request.getSubscriptionResponseForUrl(url);
       return decompressUnlabeled(response.data ?? Uint8List(0));
     });
   }

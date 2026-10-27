@@ -203,6 +203,13 @@ class AppPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, ActivityAware 
                 result.success(openAppSettings())
             }
 
+            "getAndroidId" -> reply(result) {
+                Settings.Secure.getString(
+                    GlobalState.application.contentResolver,
+                    Settings.Secure.ANDROID_ID,
+                )
+            }
+
             "getLastExitInfo" -> reply(result) {
                 GlobalState.lastExitInfo()
             }
